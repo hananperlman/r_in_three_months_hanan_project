@@ -1,0 +1,175 @@
+title: "Network Health Survey: Supplemental Report  \n2021-2022 School Year"
+author: "Hanan Perlman"
+
+date: "Report produced on `r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  officedown::rdocx_document:
+    reference_docx: aux_report_style_template_2.23.22.docx
+    page_size:
+      width: 8.5
+      height: 11
+      orient: "portrait"
+    page_margins:
+      right: 1
+      bottom: 1
+      top: 1
+    tables:
+      style: Table
+      caption:
+        style: Table Caption
+        pre: 'Table '
+        sep: ': '
+    plots:
+      style: Normal
+      align: left
+      caption:
+        style: Image Caption
+        pre: 'Figure '
+        sep: ': '
+params:
+  network_name: bear
+  engagement: TRUE
+  time: TRUE
+  expectations: TRUE
+  equity: TRUE
+  trust: TRUE
+  state: FALSE
+---
+
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, dpi=600, tab.topcaption = TRUE, fig.topcaption = TRUE, fig.width=6.5, fig.height=3, fig.showtext=TRUE) 
+```
+
+```{r data, include = FALSE}
+library(readr)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(RColorBrewer)
+library(ggthemes)
+library(scales)
+library(showtext)
+library(flextable)
+library(modelsummary)
+library(forcats)
+library(magrittr)
+library(officedown)
+library(janitor)
+font_add_google("Merriweather", "merri")
+
+network_data_2021<- read_csv("class_dataset.csv")
+
+specific_network_data_2021<- network_data_2021%>%
+  filter(network == "bear")
+
+```
+
+```{r color_define, include=FALSE}
+pal4<-c("deepskyblue1", "darkorchid1", "goldenrod1", "forestgreen")
+
+```
+
+#This is where to preprare the data for time committed and time expectation
+```{r prepare_par_time_exp_stackedbars, include=TRUE}
+
+specific_network_data_2021$so_part_expec<-factor(specific_network_data_2021$so_part_expec,
+                                    levels=c(1,2,3,4,5),
+                                    labels=c("Much less than expected", "Somewhat less than expected", "Same as expected", "Somewhat more than expected", "Much more than expected"))
+
+
+specific_network_data_2021$so_part_t<-factor(specific_network_data_2021$so_part_t,
+                                    levels=c(1,2,3,4,5,6,7),
+                                    labels=c("0-15 minutes", "16-30 minutes", "31-45 minutes", "46-60 minutes", "61-75 minutes", "76-90 minutes", "more than 90 minutes"))
+
+par_time_exp_data<-specific_network_data_2021 %>%
+  drop_na(so_part_expec, so_part_t) %>% 
+  mutate(Total=length(so_part_expec)) %>% 
+  mutate(Total=length(so_part_t))
+
+tab_par_time_exp<-par_time_exp_data%>%
+  group_by(so_part_expec, so_part_t)%>%
+  summarize(Freq=n())%>%
+  mutate(Prop=Freq/sum(Freq))%>%
+  mutate(Pct=(percent(Prop, accuracy=1)))
+
+```
+
+
+```{r}
+
+```
+
+\newpage
+# How do respondents perceive their engagement with the network?
+
+These data summarize network members’ perceptions of time spent on network activities. Network members have multiple responsibilities, and it is crucial they view their participation as valuable if they are going to prioritize network activities amongst competing professional demands.
+
+# This is where I will include the participant time and expectation bars
+
+``` {r praticipant_time_expectation, echo=FALSE, fig.height=4, fig.id="par_time_exp", fig.cap=paste("Participants' time spent by time expectations (n=", par_time_exp_data$Total, "respondents)")}
+
+par_time_exp_plot<-tab_par_time_exp%>%
+           ggplot(aes(x=so_part_expec, y=Prop, fill=fct_rev(so_part_t)))+
+  geom_col(position=position_stack())+
+  coord_flip()+
+  geom_text(aes(label=ifelse(Prop > 0.05, Pct, "")), size=3, color="black", fontface="bold", 
+            position = position_stack(vjust=.5))+
+  scale_x_discrete(labels = scales::wrap_format(25))+
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1L))+
+  labs (
+    title="Please indicate how much time you expect to spend to task related to the network during a week.",
+    y="Percent of respondents",
+    x="Participants' time expectations")+
+  scale_fill_brewer(palette="PuBu", direction=-1, breaks=c("0-15 minutes", "16-30 minutes", "31-45 minutes", "46-60 minutes", "61-75 minutes", "76-90 minutes", "more than 90 minutes"))+
+  theme_classic()+
+  theme(plot.title.position="plot",
+        legend.position= "bottom",
+        legend.box="horizontal",
+        legend.spacing.x=(unit(0.1, 'cm')),
+        legend.background=element_rect(fill="gray100", color="black"),
+        legend.title=element_blank())
+par_time_exp_plot+guides(fill=guide_legend(nrow=1))+
+  theme(
+    plot.title = element_text(family="sans", size=10, face="bold.italic"),
+    axis.title.y = element_text(family="sans", size=10, color="black"),
+    axis.title.x = element_text(family="sans", size=10, color="black"),
+    axis.text.y=element_text(family="sans", size=8, color="black"),
+    axis.text.x=element_text(family="sans", size=8, color="black"),
+    legend.text=element_text(size=6),
+    legend.key.size=unit(0.25, 'cm')
+  )
+```
+#This is a different visualization for time and expectation as side by side bars
+``` {r }
+  ggplot(data = tab_par_time_exp, 
+         aes(x=so_part_t, y=Prop, fill=so_part_expec))+
+  geom_col(position = "dodge")+
+  coord_flip()+
+geom_text(aes(label=ifelse(Prop > 0.05, Pct, "")), size=3, color="black", fontface="bold", 
+            position = position_stack(vjust=.5))+
+  scale_x_discrete(labels = scales::wrap_format(25))+
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1L))+
+  labs (
+    title="Please indicate how much time you expect to spend to task related to the network during a week.",
+    y="Percent of respondents",
+    x="Participants' time expectations")+
+  scale_fill_brewer(palette="PuBu", direction=-1, breaks=c("0-15 minutes", "16-30 minutes", "31-45 minutes", "46-60 minutes", "61-75 minutes", "76-90 minutes", "more than 90 minutes"))+
+  theme_classic()+
+  theme(plot.title.position="plot",
+        legend.position= "bottom",
+        legend.box="horizontal",
+        legend.spacing.x=(unit(0.1, 'cm')),
+        legend.background=element_rect(fill="gray100", color="black"),
+        legend.title=element_blank())
+
+
+```
+
+
+
+```{r participant_time_expectation_scatter}
+
+
+
+```
+`r if(params$time & params$expect) {"Together, these questions give you an idea of whether members are spending a reasonable amount of time on network-related activities, and whether the hub or other network stakeholders might consider ways to manage participants’ expectations around network participation."}`
